@@ -7,10 +7,11 @@ env:
 addons:
   apt:
     packages:
+      - uidmap
       - podman
     sources:
-      # podman and some container tools.
-      # https://github.com/containers/libpod/blob/master/install.md
+      # A repository for podman.
+      # https://github.com/containers/libpod/blob/master/install.md#ubuntu
       - sourceline: "ppa:projectatomic/ppa"
 atrix:
   include:
@@ -20,17 +21,20 @@ atrix:
         - DIST=fedora
         - BASE_IMAGE="${DIST}:31"
     # Intel, 32-bit, Little-endian
-    # - name: i686
-    #   env:
-    #     - CFLAGS="-m32"
-    #     - SETARCH="setarch i686 --verbose --3gb"
-    #   before_install:
-    #     - sudo apt-get update -yq
-    #     # If you want to install some additonal dependencies,
-    #     # run `apt-get -yq install foo:i386`.
-    #     - |-
-    #       sudo apt-get -yq install \
-    #         gcc-multilib
+    - name: i686
+      env:
+        - DIST=fedora
+        - BASE_IMAGE="${DIST}:31"
+        - CFLAGS="-m32"
+        - SETARCH="setarch i686 --verbose --3gb"
+        # In case of moby, "--privileged" is necessary to run `setarch`.
+        # It seems podman as well.
+        # https://github.com/moby/moby/issues/32839
+        # https://github.com/moby/moby/issues/20634
+        - PODMAN_EXTRA_OPTS="--privileged"
+        # glibc-devel.i686 is necessary to avoid following bulid error.
+        # "/usr/include/gnu/stubs.h:7:11: fatal error: gnu/stubs-32.h: No such file or directory"
+        - EXTRA_PKGS="glibc-devel.i686"
     # ARM, 64-bit, Little-endian
     # - name: "arm64 (aarch64)"
     #   arch: arm64
@@ -54,9 +58,16 @@ install:
   - mkdir -p /etc/containers
   - echo -e "[registries.search]\nregistries = ['docker.io']" | sudo tee /etc/containers/registries.conf
 
-  - podman build --rm --build-arg BASE_IMAGE="${BASE_IMAGE}" -f "Dockerfile-${DIST}" -t my-container .
+  - |
+    podman build --rm \
+      --build-arg BASE_IMAGE="${BASE_IMAGE}" \
+      --build-arg EXTRA_PKGS="${EXTRA_PKGS}" \
+      -f "Dockerfile-${DIST}" \
+      -t my-container \
+      .
 script:
-  - podman run --rm -t -e CFLAGS="${CFLAGS}" -e SETARCH="${SETARCH}" my-container bash -cx "$SETARCH make test"
+  - |
+    podman run ${PODMAN_EXTRA_OPTS} --rm -t -e CFLAGS="${CFLAGS}" -e SETARCH="${SETARCH}" my-container bash -cx "setarch --list && $SETARCH make test"
 branches:
   only:
     - master
