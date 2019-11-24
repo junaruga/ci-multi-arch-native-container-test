@@ -60,9 +60,23 @@ atrix:
         - FORCE_ARCH_32=armv7hl
         - EXTRA_PKGS="glibc-devel.armv7hl"
     # IBM, PowerPC, 64-bit, Little-endian
-    # - name: ppc64le
-    #   arch: ppc64le
+    - name: ppc64le-fedora
+      arch: ppc64le
+      env:
+        - DIST=fedora
+        - BASE_IMAGE="${DIST}:31"
+    - name: ppc64le-fedora-docker
+      arch: ppc64le
+      env:
+        - DIST=fedora
+        - BASE_IMAGE="${DIST}:31"
+        - PODMAN=docker
     # IBM, Z and LinuxONE, 64-bit, Big-endian
+    - name: s390x-fedora
+      arch: s390x
+      env:
+        - DIST=fedora
+        - BASE_IMAGE="${DIST}:31"
     - name: s390x-fedora-docker
       arch: s390x
       env:
@@ -70,17 +84,19 @@ atrix:
         - BASE_IMAGE="${DIST}:31"
         - PODMAN=docker
   allow_failures:
-    # `podman info` does not work on arm64.
+    # `podman info` does not work except x86_64.
     - name: aarch64-fedora
+    - name: ppc64le-fedora
+    - name: s390x-fedora
     # `docker --privileged` does not work on arm64.
     # https://travis-ci.community/t/debugging-docker-run-issue-on-arm64/5491
     - name: armv7hl-fedora-docker
   fast_finish: true
-before_install:
+install:
   - $PODMAN --version
   - $PODMAN info
   - $PODMAN info --debug || true
-install:
+
   # Incompatibilities of podman from docker on Travis CI
   # https://github.com/containers/libpod/issues/3679
   - mkdir -p /etc/containers
