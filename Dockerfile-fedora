@@ -3,6 +3,7 @@
 ARG BASE_IMAGE=fedora
 FROM ${BASE_IMAGE}
 
+ARG FORCE_ARCH_32
 ARG EXTRA_PKGS
 
 # Test with non-root user.
@@ -16,7 +17,7 @@ RUN uname -a
 RUN ls /etc/yum.repos.d/*.repo
 RUN sed -i '/^enabled=1$/ s/1/0/' /etc/yum.repos.d/*-modular.repo || true
 
-RUN dnf -y update
+RUN dnf -y upgrade
 RUN dnf -y --allowerasing install \
   --setopt=install_weak_deps=false \
   --setopt=tsflags=nodocs \
@@ -26,8 +27,20 @@ RUN dnf -y --allowerasing install \
   git \
   make \
   redhat-rpm-config \
-  ${EXTRA_PKGS} \
   && dnf clean all
+
+# To install armv7hl package on aarch64.
+# https://bugzilla.redhat.com/show_bug.cgi?id=1529028
+RUN \
+  # armv7hl (ARM, 32-bit)
+  if [ "${FORCE_ARCH_32}" != "" -a "${EXTRA_PKGS}" != "" ]; then \
+    dnf -y --forcearch "${FORCE_ARCH_32}" upgrade; \
+    dnf -y install --forcearch "${FORCE_ARCH_32}" ${EXTRA_PKGS}; \
+  # i686 (Intel, 32-bit)
+  elif [ "${EXTRA_PKGS}" != "" ]; then \
+    dnf -y install ${EXTRA_PKGS}; \
+  fi
+
 # Create test user and the environment
 RUN useradd "${TEST_USER}"
 WORKDIR "${WORK_DIR}"
