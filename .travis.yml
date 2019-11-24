@@ -3,6 +3,7 @@ language: minimal
 os: linux
 env:
   global:
+    - CC=
     - SETARCH=
     - PODMAN=podman
 addons:
@@ -28,14 +29,14 @@ atrix:
         - BASE_IMAGE="${DIST}:31"
         - CFLAGS="-m32"
         - SETARCH="setarch i686 --verbose --3gb"
-        # In case of moby, "--privileged" is necessary to run `setarch`.
+        # For moby, "--privileged" or "--security-opt=seccomp:unconfined"
+        # is necessary to run `setarch`.
         # It seems podman as well.
-        # https://github.com/moby/moby/issues/32839
         # https://github.com/moby/moby/issues/20634
         - PODMAN_EXTRA_OPTS="--privileged"
         # glibc-devel.i686 is necessary to avoid following bulid error.
         # "/usr/include/gnu/stubs.h:7:11: fatal error: gnu/stubs-32.h: No such file or directory"
-        - EXTRA_PKGS="glibc-devel.i686"
+        - EXTRA_ARCH_32_PKGS="glibc-devel.i686"
     # ARM, 64-bit, Little-endian
     - name: aarch64-fedora
       arch: arm64
@@ -55,10 +56,19 @@ atrix:
         - DIST=fedora
         - BASE_IMAGE="${DIST}:31"
         - PODMAN=docker
+        - CC="arm-linux-gnu-gcc"
+        - CFLAGS="-I/usr/arm-none-eabi/include"
         - SETARCH="setarch linux32 --verbose --32bit"
-        - PODMAN_EXTRA_OPTS="--privileged"
+        # Use `--security-opt=seccomp:unconfined`,
+        # as `--privileged` does not work on Travis arm64.
+        # https://travis-ci.community/t/debugging-docker-run-issue-on-arm64/5491
+        - PODMAN_EXTRA_OPTS="--security-opt=seccomp:unconfined"
+        # arm-none-eabi-newlib: includes stdio.h in it.
+        # It's to avoid an error "stdio.h: No such file or directory".
+        # https://stackoverflow.com/questions/23011367
+        - EXTRA_PKGS="gcc-arm-linux-gnu arm-none-eabi-newlib"
         - FORCE_ARCH_32=armv7hl
-        - EXTRA_PKGS="glibc-devel.armv7hl"
+        - EXTRA_ARCH_32_PKGS="glibc-devel.armv7hl"
     # IBM, PowerPC, 64-bit, Little-endian
     - name: ppc64le-fedora
       arch: ppc64le
@@ -88,8 +98,13 @@ atrix:
     - name: aarch64-fedora
     - name: ppc64le-fedora
     - name: s390x-fedora
-    # `docker --privileged` does not work on arm64.
-    # https://travis-ci.community/t/debugging-docker-run-issue-on-arm64/5491
+    # arm-linux-gnu-gcc does not work for user space.
+    # It seems that it only works for kernels.
+    # ```
+    # /usr/bin/arm-linux-gnu-ld: cannot find crt1.o: No such file or directory
+    # ...
+    # ```
+    # See <https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/4P4CNCDTJETSOLZNQJF6W5J76VZERKOJ/>.
     - name: armv7hl-fedora-docker
   fast_finish: true
 install:
@@ -105,14 +120,19 @@ install:
   - |
     travis_retry "${PODMAN}" build --rm \
       --build-arg BASE_IMAGE="${BASE_IMAGE}" \
-      --build-arg FORCE_ARCH_32="${FORCE_ARCH_32}" \
       --build-arg EXTRA_PKGS="${EXTRA_PKGS}" \
+      --build-arg FORCE_ARCH_32="${FORCE_ARCH_32}" \
+      --build-arg EXTRA_ARCH_32_PKGS="${EXTRA_ARCH_32_PKGS}" \
       -f "Dockerfile-${DIST}" \
       -t my-container \
       .
 script:
   - |
-    "${PODMAN}" run ${PODMAN_EXTRA_OPTS} --rm -t -e CFLAGS="${CFLAGS}" -e SETARCH="${SETARCH}" my-container bash -cx "setarch --list && $SETARCH make test"
+    "${PODMAN}" run ${PODMAN_EXTRA_OPTS} --rm -t \
+      -e CC="${CC:-gcc}" \
+      -e CFLAGS="${CFLAGS}" \
+      -e SETARCH="${SETARCH}" \
+      my-container bash -cx "setarch --list && $SETARCH make test"
 branches:
   only:
     - master
