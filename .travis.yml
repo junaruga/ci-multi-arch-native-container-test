@@ -1,0 +1,62 @@
+dist: xenial
+language: minimal
+os: linux
+env:
+  global:
+    - SETARCH=
+addons:
+  apt:
+    packages:
+      - podman
+    sources:
+      # podman and some container tools.
+      # https://github.com/containers/libpod/blob/master/install.md
+      - sourceline: "ppa:projectatomic/ppa"
+atrix:
+  include:
+    # Intel, 64-bit, Little-endian
+    - name: "amd64 (x86_64)"
+      env:
+        - DIST=fedora
+        - BASE_IMAGE="${DIST}:31"
+    # Intel, 32-bit, Little-endian
+    # - name: i686
+    #   env:
+    #     - CFLAGS="-m32"
+    #     - SETARCH="setarch i686 --verbose --3gb"
+    #   before_install:
+    #     - sudo apt-get update -yq
+    #     # If you want to install some additonal dependencies,
+    #     # run `apt-get -yq install foo:i386`.
+    #     - |-
+    #       sudo apt-get -yq install \
+    #         gcc-multilib
+    # ARM, 64-bit, Little-endian
+    # - name: "arm64 (aarch64)"
+    #   arch: arm64
+    # ARM, 32-bit, Little-endian
+    # - name: "arm32 (armv8l)"
+    #   arch: arm64
+    # IBM, PowerPC, 64-bit, Little-endian
+    # - name: ppc64le
+    #   arch: ppc64le
+    # IBM, Z and LinuxONE, 64-bit, Big-endian
+    # - name: s390x
+    #   arch: s390x
+  allow_failures:
+  fast_finish: true
+before_install:
+  - podman --version
+  - podman info --debug
+install:
+  # Incompatibilities of podman from docker on Travis CI
+  # https://github.com/containers/libpod/issues/3679
+  - mkdir -p /etc/containers
+  - echo -e "[registries.search]\nregistries = ['docker.io']" | sudo tee /etc/containers/registries.conf
+
+  - podman build --rm --build-arg BASE_IMAGE="${BASE_IMAGE}" -f "Dockerfile-${DIST}" -t my-container .
+script:
+  - podman run --rm -t -e CFLAGS="${CFLAGS}" -e SETARCH="${SETARCH}" my-container bash -cx "$SETARCH make test"
+branches:
+  only:
+    - master
