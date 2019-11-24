@@ -3,8 +3,9 @@
 ARG BASE_IMAGE=fedora
 FROM ${BASE_IMAGE}
 
-ARG FORCE_ARCH_32
 ARG EXTRA_PKGS
+ARG FORCE_ARCH_32
+ARG EXTRA_ARCH_32_PKGS
 
 # Test with non-root user.
 ENV TEST_USER tester
@@ -26,18 +27,19 @@ RUN dnf -y --allowerasing install \
   gcc \
   make \
   redhat-rpm-config \
+  ${EXTRA_PKGS} \
   && dnf clean all
 
 # To install armv7hl package on aarch64.
 # https://bugzilla.redhat.com/show_bug.cgi?id=1529028
 RUN \
   # armv7hl (ARM, 32-bit)
-  if [ "${FORCE_ARCH_32}" != "" -a "${EXTRA_PKGS}" != "" ]; then \
+  if [ "${FORCE_ARCH_32}" != "" -a "${EXTRA_ARCH_32_PKGS}" != "" ]; then \
     dnf -y --forcearch "${FORCE_ARCH_32}" upgrade; \
-    dnf -y install --forcearch "${FORCE_ARCH_32}" ${EXTRA_PKGS}; \
+    dnf -y install --forcearch "${FORCE_ARCH_32}" ${EXTRA_ARCH_32_PKGS}; \
   # i686 (Intel, 32-bit)
-  elif [ "${EXTRA_PKGS}" != "" ]; then \
-    dnf -y install ${EXTRA_PKGS}; \
+  elif [ "${EXTRA_ARCH_32_PKGS}" != "" ]; then \
+    dnf -y install ${EXTRA_ARCH_32_PKGS}; \
   fi
 
 # Create test user and the environment
