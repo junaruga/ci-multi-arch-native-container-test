@@ -49,8 +49,16 @@ atrix:
         - BASE_IMAGE="${DIST}:31"
         - PODMAN=docker
     # ARM, 32-bit, Little-endian
-    # - name: "arm32 (armv8l)"
-    #   arch: arm64
+    - name: armv7hl-fedora-docker"
+      arch: arm64
+      env:
+        - DIST=fedora
+        - BASE_IMAGE="${DIST}:31"
+        - PODMAN=docker
+        - SETARCH="setarch linux32 --verbose --32bit"
+        - PODMAN_EXTRA_OPTS="--privileged"
+        - FORCE_ARCH_32=armv7hl
+        - EXTRA_PKGS="glibc-devel.armv7hl"
     # IBM, PowerPC, 64-bit, Little-endian
     # - name: ppc64le
     #   arch: ppc64le
@@ -58,7 +66,11 @@ atrix:
     # - name: s390x
     #   arch: s390x
   allow_failures:
+    # `podman info` does not work on arm64.
     - name: aarch64-fedora
+    # `docker --privileged` does not work on arm64.
+    # https://travis-ci.community/t/debugging-docker-run-issue-on-arm64/5491
+    - name: armv7hl-fedora-docker"
   fast_finish: true
 before_install:
   - $PODMAN --version
@@ -73,6 +85,7 @@ install:
   - |
     "${PODMAN}" build --rm \
       --build-arg BASE_IMAGE="${BASE_IMAGE}" \
+      --build-arg FORCE_ARCH_32="${FORCE_ARCH_32}" \
       --build-arg EXTRA_PKGS="${EXTRA_PKGS}" \
       -f "Dockerfile-${DIST}" \
       -t my-container \
