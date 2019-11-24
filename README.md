@@ -7,6 +7,7 @@ This repository is focusing to test non-Ubuntu Linux distribution (Fedora, RHEL)
 
 ## Sister projects
 
+* [ci-multi-arch-native-test](https://github.com/junaruga/ci-multi-arch-native-test): This project is focusing Travis Ubuntu native cases. No container and no QEMU.
 * [ci-multi-arch-test](https://github.com/junaruga/ci-multi-arch-test): This project has both some CIs native and emulated architecture cases.
 
 ## References
