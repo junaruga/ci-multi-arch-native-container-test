@@ -103,7 +103,7 @@ install:
   - echo -e "[registries.search]\nregistries = ['docker.io']" | sudo tee /etc/containers/registries.conf
 
   - |
-    "${PODMAN}" build --rm \
+    travis_retry "${PODMAN}" build --rm \
       --build-arg BASE_IMAGE="${BASE_IMAGE}" \
       --build-arg FORCE_ARCH_32="${FORCE_ARCH_32}" \
       --build-arg EXTRA_PKGS="${EXTRA_PKGS}" \
