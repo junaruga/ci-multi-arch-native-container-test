@@ -4,6 +4,7 @@ os: linux
 env:
   global:
     - SETARCH=
+    - PODMAN=podman
 addons:
   apt:
     packages:
@@ -16,12 +17,12 @@ addons:
 atrix:
   include:
     # Intel, 64-bit, Little-endian
-    - name: "amd64 (x86_64)"
+    - name: x86_64-fedora
       env:
         - DIST=fedora
         - BASE_IMAGE="${DIST}:31"
     # Intel, 32-bit, Little-endian
-    - name: i686
+    - name: i686-fedora
       env:
         - DIST=fedora
         - BASE_IMAGE="${DIST}:31"
@@ -36,8 +37,17 @@ atrix:
         # "/usr/include/gnu/stubs.h:7:11: fatal error: gnu/stubs-32.h: No such file or directory"
         - EXTRA_PKGS="glibc-devel.i686"
     # ARM, 64-bit, Little-endian
-    # - name: "arm64 (aarch64)"
-    #   arch: arm64
+    - name: aarch64-fedora
+      arch: arm64
+      env:
+        - DIST=fedora
+        - BASE_IMAGE="${DIST}:31"
+    - name: aarch64-fedora-docker
+      arch: arm64
+      env:
+        - DIST=fedora
+        - BASE_IMAGE="${DIST}:31"
+        - PODMAN=docker
     # ARM, 32-bit, Little-endian
     # - name: "arm32 (armv8l)"
     #   arch: arm64
@@ -48,10 +58,12 @@ atrix:
     # - name: s390x
     #   arch: s390x
   allow_failures:
+    - name: aarch64-fedora
   fast_finish: true
 before_install:
-  - podman --version
-  - podman info --debug
+  - $PODMAN --version
+  - $PODMAN info
+  - $PODMAN info --debug || true
 install:
   # Incompatibilities of podman from docker on Travis CI
   # https://github.com/containers/libpod/issues/3679
@@ -59,7 +71,7 @@ install:
   - echo -e "[registries.search]\nregistries = ['docker.io']" | sudo tee /etc/containers/registries.conf
 
   - |
-    podman build --rm \
+    "${PODMAN}" build --rm \
       --build-arg BASE_IMAGE="${BASE_IMAGE}" \
       --build-arg EXTRA_PKGS="${EXTRA_PKGS}" \
       -f "Dockerfile-${DIST}" \
@@ -67,7 +79,7 @@ install:
       .
 script:
   - |
-    podman run ${PODMAN_EXTRA_OPTS} --rm -t -e CFLAGS="${CFLAGS}" -e SETARCH="${SETARCH}" my-container bash -cx "setarch --list && $SETARCH make test"
+    "${PODMAN}" run ${PODMAN_EXTRA_OPTS} --rm -t -e CFLAGS="${CFLAGS}" -e SETARCH="${SETARCH}" my-container bash -cx "setarch --list && $SETARCH make test"
 branches:
   only:
     - master
