@@ -24,7 +24,6 @@ RUN dnf -y --allowerasing install \
   --setopt=deltarpm=0 \
   file \
   gcc \
-  git \
   make \
   redhat-rpm-config \
   && dnf clean all
