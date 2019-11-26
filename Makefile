@@ -13,7 +13,6 @@ clean :
 .PHONY : clean
 
 test : all
-	uname -m
 	file $(TARGET)
 	ls -l $(TARGET)
 	$(TARGET)

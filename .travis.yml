@@ -132,7 +132,7 @@ script:
       -e CC="${CC:-gcc}" \
       -e CFLAGS="${CFLAGS}" \
       -e SETARCH="${SETARCH}" \
-      my-container bash -cx "setarch --list && $SETARCH make test"
+      my-container bash -cx "setarch --list && $SETARCH uname -m && $SETARCH make test"
 branches:
   only:
     - master
