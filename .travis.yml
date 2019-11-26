@@ -6,16 +6,7 @@ env:
     - CC=
     - SETARCH=
     - PODMAN=podman
-addons:
-  apt:
-    packages:
-      - uidmap
-      - podman
-    sources:
-      # A repository for podman.
-      # https://github.com/containers/libpod/blob/master/install.md#ubuntu
-      - sourceline: "ppa:projectatomic/ppa"
-atrix:
+matrix:
   include:
     # Intel, 64-bit, Little-endian
     - name: x86_64-fedora
@@ -50,7 +41,7 @@ atrix:
         - BASE_IMAGE="${DIST}:31"
         - PODMAN=docker
     # ARM, 32-bit, Little-endian
-    - name: armv7hl-fedora-docker
+    - name: arm32-fedora-docker
       arch: arm64
       env:
         - DIST=fedora
@@ -105,9 +96,15 @@ atrix:
     # ...
     # ```
     # See <https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/4P4CNCDTJETSOLZNQJF6W5J76VZERKOJ/>.
-    - name: armv7hl-fedora-docker
+    - name: arm32-fedora-docker
   fast_finish: true
 install:
+  # Install podman on Ubuntu.
+  # https://github.com/containers/libpod/blob/master/install.md#ubuntu
+  - sudo add-apt-repository -y ppa:projectatomic/ppa
+  - sudo apt-get update -qq
+  - sudo apt-get -qq -y install podman uidmap
+
   - $PODMAN --version
   - $PODMAN info
   - $PODMAN info --debug || true
