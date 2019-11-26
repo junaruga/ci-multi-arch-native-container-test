@@ -107,6 +107,10 @@ install:
   - sudo apt-get update -qq
   - sudo apt-get -qq -y install podman uidmap
 
+  - apt-cache show podman
+  - dpkg-query -L podman
+  - apt list podman
+
   - $PODMAN --version
   - $PODMAN version || true
   - $PODMAN info || true
