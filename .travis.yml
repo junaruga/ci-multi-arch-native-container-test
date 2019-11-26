@@ -89,6 +89,8 @@ matrix:
     - name: aarch64-fedora
     - name: ppc64le-fedora
     - name: s390x-fedora
+    # The fedora ppc64le RPM repository is unstable. It often fails to download RPMs.
+    - name: ppc64le-fedora-docker
     # arm-linux-gnu-gcc does not work for user space.
     # It seems that it only works for kernels.
     # ```
@@ -106,7 +108,8 @@ install:
   - sudo apt-get -qq -y install podman uidmap
 
   - $PODMAN --version
-  - $PODMAN info
+  - $PODMAN version || true
+  - $PODMAN info || true
   - $PODMAN info --debug || true
 
   # Incompatibilities of podman from docker on Travis CI
