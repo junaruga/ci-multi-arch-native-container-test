@@ -86,6 +86,7 @@ matrix:
         - PODMAN=docker
   allow_failures:
     # `podman info` does not work except x86_64.
+    # https://github.com/containers/libpod/issues/4570
     - name: aarch64-fedora
     - name: ppc64le-fedora
     - name: s390x-fedora
