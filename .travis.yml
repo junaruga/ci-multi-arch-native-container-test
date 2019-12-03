@@ -136,6 +136,7 @@ install:
   - uname -a
   # To emphasize printing the kernel release
   - uname -r
+  - nproc
   - env
   - id
 
