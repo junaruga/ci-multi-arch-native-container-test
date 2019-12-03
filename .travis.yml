@@ -29,8 +29,14 @@ matrix:
         # "/usr/include/gnu/stubs.h:7:11: fatal error: gnu/stubs-32.h: No such file or directory"
         - EXTRA_ARCH_32_PKGS="glibc-devel.i686"
     # ARM, 64-bit, Little-endian
-    - name: aarch64-fedora
+    - name: aarch64-xenial-fedora
       arch: arm64
+      env:
+        - DIST=fedora
+        - BASE_IMAGE="${DIST}:31"
+    - name: aarch64-bionic-fedora
+      arch: arm64
+      dist: bionic
       env:
         - DIST=fedora
         - BASE_IMAGE="${DIST}:31"
@@ -61,8 +67,14 @@ matrix:
         - FORCE_ARCH_32=armv7hl
         - EXTRA_ARCH_32_PKGS="glibc-devel.armv7hl"
     # IBM, PowerPC, 64-bit, Little-endian
-    - name: ppc64le-fedora
+    - name: ppc64le-xenial-fedora
       arch: ppc64le
+      env:
+        - DIST=fedora
+        - BASE_IMAGE="${DIST}:31"
+    - name: ppc64le-bionic-fedora
+      arch: ppc64le
+      dist: bionic
       env:
         - DIST=fedora
         - BASE_IMAGE="${DIST}:31"
@@ -73,8 +85,14 @@ matrix:
         - BASE_IMAGE="${DIST}:31"
         - PODMAN=docker
     # IBM, Z and LinuxONE, 64-bit, Big-endian
-    - name: s390x-fedora
+    - name: s390x-xenial-fedora
       arch: s390x
+      env:
+        - DIST=fedora
+        - BASE_IMAGE="${DIST}:31"
+    - name: s390x-bionic-fedora
+      arch: s390x
+      dist: bionic
       env:
         - DIST=fedora
         - BASE_IMAGE="${DIST}:31"
@@ -87,9 +105,12 @@ matrix:
   allow_failures:
     # `podman info` does not work except x86_64.
     # https://github.com/containers/libpod/issues/4570
-    - name: aarch64-fedora
-    - name: ppc64le-fedora
-    - name: s390x-fedora
+    - name: aarch64-xenial-fedora
+    - name: aarch64-bionic-fedora
+    - name: ppc64le-xenial-fedora
+    - name: ppc64le-bionic-fedora
+    - name: s390x-xenial-fedora
+    - name: s390x-bionic-fedora
     # The fedora ppc64le RPM repository is unstable. It often fails to download RPMs.
     - name: ppc64le-fedora-docker
     # arm-linux-gnu-gcc does not work for user space.
@@ -106,19 +127,22 @@ install:
   # https://github.com/containers/libpod/blob/master/install.md#ubuntu
   - sudo add-apt-repository -y ppa:projectatomic/ppa
   - sudo apt-get update -qq
-  - sudo apt-get -qq -y install podman uidmap
+  - sudo apt-get -qq -y install podman uidmap strace
 
   - apt list podman
   - apt-cache show podman
   - dpkg-query -L podman
 
   - uname -a
+  # To emphasize printing the kernel release
+  - uname -r
   - env
   - id
 
   - $PODMAN --version
   - $PODMAN version || true
   - $PODMAN info || true
+  - strace -f $PODMAN info || true
   - $PODMAN info --debug || true
 
   # Incompatibilities of podman from docker on Travis CI
